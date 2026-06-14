@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Merge the lecturer dashboard and per-session statistics page into one unified session workbench, improve adaptive layout density, and finish the agreed questionnaire-list cleanup and import-success feedback.
+**Goal:** Merge the lecturer dashboard and per-session statistics page into one unified session workbench, improve adaptive layout density, and finish the agreed questionnaire/session management cleanup and import-success feedback.
 
-**Architecture:** Keep both routes, but make them render the same workbench page shell. Move route selection, session-switching, shared action buttons, and top summary cards into reusable session-workbench units; continue reusing the existing `SessionStatisticsPanel` for the analytics body, then add focused questionnaire-list helpers for "delete empty questionnaire only" and import-success status presentation.
+**Architecture:** Keep both routes, but make them render the same workbench page shell. Move route selection, session-switching, shared action buttons, and top summary cards into reusable session-workbench units; continue reusing the existing `SessionStatisticsPanel` for the analytics body, then add focused management helpers for "delete empty questionnaire only", "delete session with cascading cleanup", newest-first list ordering, and import-success status presentation.
 
 **Tech Stack:** Next.js App Router, React Server Components, TypeScript, Vitest, Playwright, Tailwind CSS
 
@@ -26,8 +26,11 @@
 - `src/components/public/survey-form.tsx` — make single-choice and multiple-choice answers use adaptive flowing option cards.
 - `src/app/(console)/questionnaires/page.tsx` — add delete-empty-questionnaire entry and user-facing restriction copy.
 - `src/app/(console)/questionnaires/[questionnaireId]/edit/page.tsx` — show import-success banner.
+- `src/app/(console)/questionnaires/[questionnaireId]/sessions/page.tsx` — add delete-session entry, destructive confirmation flow, and newest-first ordering copy.
 - `src/features/questionnaires/actions.ts` — add owned-questionnaire deletion rule that only allows questionnaires with zero sessions.
+- `src/features/sessions/actions.ts` — add owned-session deletion with cascading cleanup and ensure newest-first list ordering.
 - `tests/integration/questionnaire-actions.test.ts` — cover the delete-empty-questionnaire service behavior.
+- `tests/integration/session-actions.test.ts` — cover delete-session cascading cleanup and list ordering.
 - `tests/e2e/lecturer-flow.spec.ts` — update the lecturer flow to assert the unified workbench behavior.
 
 **Keep Reused**
@@ -889,6 +892,178 @@ git commit -m "feat: add questionnaire cleanup and import success feedback"
 
 ---
 
+### Task 8: Delete Session and Newest-First Ordering
+
+**Files:**
+- Modify: `src/features/sessions/actions.ts`
+- Modify: `src/app/(console)/questionnaires/[questionnaireId]/sessions/page.tsx`
+- Modify: `src/features/questionnaires/actions.ts`
+- Modify: `tests/integration/session-actions.test.ts`
+- Modify: `tests/e2e/lecturer-flow.spec.ts`
+
+- [ ] **Step 1: Add the failing session deletion and ordering tests**
+
+Create or extend `tests/integration/session-actions.test.ts`:
+
+```ts
+it("lists sessions with newest first", async () => {
+  findManyMock.mockResolvedValue([{ id: "new" }, { id: "old" }]);
+
+  await listQuestionnaireSessions("q1", "u1");
+
+  expect(findManyMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      orderBy: [{ createdAt: "desc" }],
+    }),
+  );
+});
+
+it("deletes a session and its dependent data", async () => {
+  deleteMock.mockResolvedValue({ id: "s1" });
+
+  const result = await deleteOwnedSession("s1", "u1");
+
+  expect(result).toEqual({ id: "s1" });
+  expect(deleteMock).toHaveBeenCalledWith({
+    where: { id: "s1", ownerId: "u1" },
+  });
+});
+```
+
+Also extend `tests/integration/questionnaire-actions.test.ts`:
+
+```ts
+it("lists questionnaires with newest first", async () => {
+  findManyMock.mockResolvedValue([{ id: "new" }, { id: "old" }]);
+
+  await listOwnedQuestionnaires("u1");
+
+  expect(findManyMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      orderBy: [{ createdAt: "desc" }],
+    }),
+  );
+});
+```
+
+- [ ] **Step 2: Run the integration tests and verify they fail**
+
+Run:
+
+```bash
+pnpm exec vitest run tests/integration/session-actions.test.ts tests/integration/questionnaire-actions.test.ts
+```
+
+Expected:
+
+```text
+FAIL  deleteOwnedSession is not defined
+```
+
+- [ ] **Step 3: Implement newest-first ordering and destructive session deletion**
+
+Update `src/features/questionnaires/actions.ts`:
+
+```ts
+export async function listOwnedQuestionnaires(ownerId: string) {
+  return db.questionnaire.findMany({
+    where: { ownerId },
+    orderBy: [{ createdAt: "desc" }],
+    include: {
+      _count: {
+        select: {
+          sessions: true,
+        },
+      },
+    },
+  });
+}
+```
+
+Update `src/features/sessions/actions.ts`:
+
+```ts
+export async function listQuestionnaireSessions(questionnaireId: string, ownerId: string) {
+  return db.session.findMany({
+    where: { questionnaireId, ownerId },
+    orderBy: [{ createdAt: "desc" }],
+  });
+}
+
+export async function deleteOwnedSession(sessionId: string, ownerId: string) {
+  return db.session.delete({
+    where: {
+      id: sessionId,
+      ownerId,
+    },
+  });
+}
+```
+
+This step assumes Prisma relations already cascade dependent cleanup; if they do not, update the Prisma schema or explicit delete order before shipping.
+
+- [ ] **Step 4: Add delete-session UI to the session management page**
+
+Update `src/app/(console)/questionnaires/[questionnaireId]/sessions/page.tsx`:
+
+```tsx
+async function deleteSessionAction(formData: FormData) {
+  "use server";
+
+  const session = await auth();
+  const ownerId = session?.user?.id;
+
+  if (!ownerId) {
+    redirect("/login");
+  }
+
+  const sessionId = String(formData.get("sessionId") ?? "");
+  await deleteOwnedSession(sessionId, ownerId);
+  redirect(`/questionnaires/${questionnaireId}/sessions?deleted=1`);
+}
+```
+
+Render a destructive confirmed action for every session card:
+
+```tsx
+<form action={deleteSessionAction}>
+  <input name="sessionId" type="hidden" value={item.id} />
+  <DeleteSessionButton />
+</form>
+```
+
+The client confirmation copy must say:
+
+```text
+删除后，该场次的答卷、统计与导出记录将一并清除，且不可恢复。
+```
+
+- [ ] **Step 5: Run integration and e2e verification**
+
+Run:
+
+```bash
+pnpm exec vitest run tests/integration/session-actions.test.ts tests/integration/questionnaire-actions.test.ts
+pnpm exec playwright test tests/e2e/lecturer-flow.spec.ts
+pnpm exec eslint src/features/sessions/actions.ts src/app/'(console)'/questionnaires/'[questionnaireId]'/sessions/page.tsx src/features/questionnaires/actions.ts
+```
+
+Expected:
+
+```text
+All tests PASS
+ESLint exits with code 0
+```
+
+- [ ] **Step 6: Commit the session management update**
+
+```bash
+git add src/features/sessions/actions.ts src/app/'(console)'/questionnaires/'[questionnaireId]'/sessions/page.tsx src/features/questionnaires/actions.ts tests/integration/session-actions.test.ts tests/integration/questionnaire-actions.test.ts
+git commit -m "feat: add destructive session deletion and newest-first ordering"
+```
+
+---
+
 ## Self-Review
 
 ### Spec Coverage
@@ -901,6 +1076,7 @@ git commit -m "feat: add questionnaire cleanup and import success feedback"
 - Add adaptive, content-responsive layout for short cards and answer options: covered by Task 5.
 - Add delete-empty-questionnaire behavior in the questionnaire list: covered by Task 6.
 - Add explicit business success feedback after Excel import: covered by Task 7.
+- Add destructive session deletion and newest-first questionnaire/session ordering: covered by Task 8.
 
 ### Placeholder Scan
 
