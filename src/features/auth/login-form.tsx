@@ -41,7 +41,7 @@ export function LoginForm({ callbackUrl, registered }: LoginFormProps) {
 
   return (
     <div className="w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
-      <p className="text-sm uppercase tracking-[0.3em] text-emerald-600">Lecturer Sign In</p>
+      <p className="text-sm uppercase tracking-[0.3em] text-emerald-600">讲师登录</p>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight text-neutral-950">
         讲师登录
       </h1>

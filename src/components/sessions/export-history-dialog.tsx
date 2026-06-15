@@ -63,32 +63,28 @@ export function ExportHistoryDialog({ sessionId }: ExportHistoryDialogProps) {
     if (!open) {
       return;
     }
-
     let active = true;
-    setLoading(true);
-
-    fetch(apiUrl)
-      .then(async (response) => {
+    (async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(apiUrl);
         if (!response.ok) {
-          throw new Error("FETCH_FAILED");
+          throw new Error('FETCH_FAILED');
         }
-
         const payload = (await response.json()) as { jobs: ExportJob[] };
         if (active) {
           setJobs(Array.isArray(payload.jobs) ? payload.jobs : []);
         }
-      })
-      .catch(() => {
+      } catch (e) {
         if (active) {
           setJobs([]);
         }
-      })
-      .finally(() => {
+      } finally {
         if (active) {
           setLoading(false);
         }
-      });
-
+      }
+    })();
     return () => {
       active = false;
     };

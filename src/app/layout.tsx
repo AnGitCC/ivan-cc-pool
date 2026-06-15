@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Survey Platform",
+  title: "问卷平台",
   description: "Survey platform MVP",
 };
 

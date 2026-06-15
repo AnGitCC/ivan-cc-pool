@@ -273,7 +273,7 @@ export function QuestionnaireBuilder({
                       title: event.target.value,
                     }))
                   }
-                  placeholder="例如：培训反馈问卷"
+                  placeholder="例如：培训反馈问卷（标题）"
                   type="text"
                   value={draft.title}
                 />
@@ -291,7 +291,7 @@ export function QuestionnaireBuilder({
                       description: event.target.value,
                     }))
                   }
-                  placeholder="例如：用于课程结束后的匿名反馈"
+                  placeholder="例如：用于课程结束后的匿名反馈（描述）"
                   type="text"
                   value={draft.description}
                 />
@@ -347,7 +347,7 @@ export function QuestionnaireBuilder({
                                   title: event.target.value,
                                 }))
                               }
-                              placeholder="例如：你的部门"
+                              placeholder="例如：研发"
                               type="text"
                               value={question.title}
                             />

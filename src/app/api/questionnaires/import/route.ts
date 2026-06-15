@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "未授权访问。" }, { status: 401 });
+    return NextResponse.json({ error: "请先登录后再访问。" }, { status: 401 });
   }
 
   const formData = await request.formData();

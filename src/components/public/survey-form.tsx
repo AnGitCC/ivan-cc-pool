@@ -103,7 +103,7 @@ function QuestionField({ question }: { question: QuestionnaireQuestion }) {
           max={10}
           min={1}
           name={question.key}
-          placeholder="请输入 1-10 分"
+          placeholder="1-10 分"
           required={question.required}
           step={1}
           type="number"
@@ -127,7 +127,7 @@ function QuestionField({ question }: { question: QuestionnaireQuestion }) {
         className="min-h-32 w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 outline-none transition focus:border-emerald-500"
         id={question.key}
         name={question.key}
-        placeholder="请输入你的回答"
+        placeholder="请输入回答"
         required={question.required}
       />
     </div>

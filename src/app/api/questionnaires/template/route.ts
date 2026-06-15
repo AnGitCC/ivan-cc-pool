@@ -8,7 +8,7 @@ export async function GET() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "未授权访问。" }, { status: 401 });
+    return NextResponse.json({ error: "请先登录后再访问。" }, { status: 401 });
   }
 
   const workbookBuffer = buildQuestionnaireTemplateWorkbook();
