@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SessionSwitcher } from "@/components/sessions/session-switcher";
+import { ExportHistoryDialog } from "@/components/sessions/export-history-dialog";
 import { ShareDialog } from "@/components/sessions/share-dialog";
 import { SessionStatisticsPanel } from "@/components/stats/session-statistics-panel";
 import type { DashboardPreference } from "@/features/stats/preferences";
@@ -208,6 +209,17 @@ export function SessionWorkbenchPage({
             sessionName={statistics.session.name}
             url={statistics.session.publicUrl}
           />
+          <ExportHistoryDialog sessionId={statistics.session.id} />
+          {statistics.session.status === "CLOSED" ? (
+            <a
+              className="inline-flex items-center justify-center rounded-full border border-neutral-300 px-5 py-3 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 hover:text-neutral-950"
+              href={`${statistics.session.publicUrl}/closed`}
+              rel="noreferrer"
+              target="_blank"
+            >
+              预览结束页
+            </a>
+          ) : null}
           <a
             className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-5 py-3 text-sm font-medium text-emerald-700 transition hover:bg-emerald-200"
             href={`/api/sessions/${statistics.session.id}/exports/raw`}

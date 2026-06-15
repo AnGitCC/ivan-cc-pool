@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   optionSeparator,
@@ -8,6 +9,8 @@ import {
   templateExampleRows,
   templateHeader,
 } from "@/features/questionnaires/template";
+import { ImportPreviewDialog } from "@/components/questionnaires/import-preview-dialog";
+import type { QuestionnaireInput } from "@/features/questionnaires/schema";
 
 type QuestionnaireImportPanelProps = {
   importAction: (formData: FormData) => void | Promise<void>;
@@ -34,6 +37,49 @@ export function QuestionnaireImportPanel({
   const requiredFlagsText = `${requiredFlagLabels.required} / ${requiredFlagLabels.optional}`;
   const optionExampleText = `研发${optionSeparator}产品${optionSeparator}运营`;
   const scoreExampleText = `5${optionSeparator}4${optionSeparator}3`;
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+  const [previewQuestionnaire, setPreviewQuestionnaire] =
+    useState<QuestionnaireInput | null>(null);
+
+  async function handlePreview() {
+    if (!selectedFile || previewLoading) {
+      return;
+    }
+
+    setPreviewError("");
+    setPreviewQuestionnaire(null);
+    setPreviewLoading(true);
+    setPreviewOpen(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      const response = await fetch("/api/questionnaires/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = (await response.json()) as {
+        questionnaire?: QuestionnaireInput;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "预览解析失败。");
+      }
+
+      setPreviewQuestionnaire(payload.questionnaire ?? null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "预览解析失败。";
+      setPreviewError(message);
+      setPreviewQuestionnaire(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
 
   return (
     <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
@@ -127,13 +173,34 @@ export function QuestionnaireImportPanel({
             accept=".xlsx,.xls"
             className="block w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-700 file:mr-4 file:rounded-full file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-emerald-700"
             name="file"
+            onChange={(event) => {
+              setSelectedFile(event.target.files?.[0] ?? null);
+            }}
             required
             type="file"
           />
         </label>
 
-        <ImportSubmitButton />
+        <div className="flex flex-wrap gap-3">
+          <button
+            className="inline-flex items-center justify-center rounded-full border border-neutral-300 px-5 py-3 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-70"
+            disabled={!selectedFile || previewLoading}
+            onClick={handlePreview}
+            type="button"
+          >
+            {previewLoading ? "预览中..." : "预览解析结果"}
+          </button>
+          <ImportSubmitButton />
+        </div>
       </form>
+
+      <ImportPreviewDialog
+        error={previewError}
+        loading={previewLoading}
+        onOpenChange={setPreviewOpen}
+        open={previewOpen}
+        questionnaire={previewQuestionnaire}
+      />
     </section>
   );
 }

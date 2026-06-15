@@ -308,6 +308,16 @@ export default async function QuestionnaireSessionsPage({
                   >
                     查看统计
                   </Link>
+                  {surveySession.status === "CLOSED" ? (
+                    <a
+                      className="inline-flex items-center justify-center rounded-full border border-neutral-300 px-5 py-3 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 hover:text-neutral-950"
+                      href={`${surveySession.publicUrl}/closed`}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      预览结束页
+                    </a>
+                  ) : null}
                   {surveySession.status === "ACTIVE" ? (
                     <form action={handleCloseSession}>
                       <input

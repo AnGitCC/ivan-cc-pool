@@ -57,6 +57,16 @@ export async function GET(_request: Request, { params }: RouteContext) {
   const rows = buildRawExportRows(questionnaire, exportSession.submissions);
   const workbookBuffer = buildRawWorkbook(rows);
 
+  try {
+    await db.exportJob.create({
+      data: {
+        sessionId,
+        kind: "RAW_XLSX",
+        status: "READY",
+      },
+    });
+  } catch {}
+
   return new NextResponse(workbookBuffer, {
     headers: {
       "Content-Disposition": `attachment; filename="${buildRawExportFileName(exportSession.name)}"`,

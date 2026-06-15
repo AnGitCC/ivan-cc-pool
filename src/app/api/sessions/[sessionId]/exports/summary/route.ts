@@ -6,6 +6,7 @@ import {
 } from "@/features/exports/summary-export";
 import { getSessionStatistics } from "@/features/stats/query";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -30,6 +31,16 @@ export async function GET(_request: Request, { params }: RouteContext) {
   }
 
   const workbookBuffer = buildSummaryWorkbook(buildSummaryRows(statistics));
+
+  try {
+    await db.exportJob.create({
+      data: {
+        sessionId,
+        kind: "SUMMARY_XLSX",
+        status: "READY",
+      },
+    });
+  } catch {}
 
   return new NextResponse(workbookBuffer, {
     headers: {

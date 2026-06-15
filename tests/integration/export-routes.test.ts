@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   authMock,
   sessionFindFirstMock,
+  exportJobCreateMock,
   getSessionStatisticsMock,
   getDashboardPreferenceMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   sessionFindFirstMock: vi.fn(),
+  exportJobCreateMock: vi.fn(),
   getSessionStatisticsMock: vi.fn(),
   getDashboardPreferenceMock: vi.fn(),
 }));
@@ -21,6 +23,9 @@ vi.mock("@/lib/db", () => ({
   db: {
     session: {
       findFirst: sessionFindFirstMock,
+    },
+    exportJob: {
+      create: exportJobCreateMock,
     },
   },
 }));

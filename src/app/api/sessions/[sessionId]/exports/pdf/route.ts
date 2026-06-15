@@ -4,6 +4,7 @@ import { buildPdfReport } from "@/features/exports/pdf-export";
 import { getDashboardPreference } from "@/features/stats/preferences";
 import { getSessionStatistics } from "@/features/stats/query";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,16 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
   const preference = await getDashboardPreference(session.user.id);
   const pdfBuffer = buildPdfReport(statistics, preference);
+
+  try {
+    await db.exportJob.create({
+      data: {
+        sessionId,
+        kind: "PDF",
+        status: "READY",
+      },
+    });
+  } catch {}
 
   return new NextResponse(pdfBuffer, {
     headers: {
