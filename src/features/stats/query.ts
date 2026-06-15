@@ -165,10 +165,12 @@ export async function getSessionStatistics(
 
   const questionnaire = questionnaireSchema.parse(session.questionnaire.schemaJson);
   const scoreAggregateMap = new Map(
-    session.scoreAggregates.map((aggregate) => [
-      aggregate.questionKey,
-      aggregate.averageScore,
-    ]),
+    session.scoreAggregates.map(
+      (aggregate: (typeof session.scoreAggregates)[number]) => [
+        aggregate.questionKey,
+        aggregate.averageScore,
+      ],
+    ),
   );
   const optionAggregateMap = new Map<string, Map<string, number>>();
 
@@ -179,11 +181,13 @@ export async function getSessionStatistics(
     optionAggregateMap.set(aggregate.questionKey, questionMap);
   }
 
-  const submissions = session.submissions.map((submission) => ({
-    answers: getPayloadAnswers(submission.payloadJson),
-    totalScore: submission.totalScore,
-    submittedAt: submission.submittedAt,
-  }));
+  const submissions = session.submissions.map(
+    (submission: (typeof session.submissions)[number]) => ({
+      answers: getPayloadAnswers(submission.payloadJson),
+      totalScore: submission.totalScore,
+      submittedAt: submission.submittedAt,
+    }),
+  );
 
   const scoreEntries = submissions.filter(
     (submission): submission is typeof submission & { totalScore: number } =>
@@ -211,14 +215,14 @@ export async function getSessionStatistics(
     for (const question of section.questions) {
       const blockId = `question:${question.key}`;
       const answersByQuestion = submissions
-        .map((submission) => submission.answers[question.key])
-        .filter((value) => getAnsweredValueCount(value) > 0);
+        .map((submission: (typeof submissions)[number]) => submission.answers[question.key])
+        .filter((value: unknown) => getAnsweredValueCount(value) > 0);
 
       if (question.type === "text") {
         textQuestions.push({
           questionKey: question.key,
           title: question.title,
-          answers: answersByQuestion.map((value) => String(value).trim()),
+          answers: answersByQuestion.map((value: unknown) => String(value).trim()),
         });
         continue;
       }
@@ -226,7 +230,7 @@ export async function getSessionStatistics(
       const answeredCount = answersByQuestion.length;
       const countMap = optionAggregateMap.get(question.key) ?? new Map<string, number>();
       const optionLabels = Array.isArray(question.options)
-        ? question.options.map((option) =>
+        ? question.options.map((option: (typeof question.options)[number]) =>
             typeof option === "string" ? option : option.label,
           )
         : sortLabels(countMap.keys());
