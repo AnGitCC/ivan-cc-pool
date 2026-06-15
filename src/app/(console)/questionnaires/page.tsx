@@ -13,6 +13,8 @@ import {
 } from "@/features/questionnaires/import-flow";
 import { auth } from "@/lib/auth";
 
+type QuestionnaireListItem = Awaited<ReturnType<typeof listOwnedQuestionnaires>>[number];
+
 function getSearchParamMessage(error?: string) {
   if (!error) {
     return null;
@@ -54,7 +56,9 @@ export default async function QuestionnairesPage({
 }: QuestionnairesPageProps) {
   const session = await auth();
   const ownerId = session?.user?.id;
-  const questionnaires = ownerId ? await listOwnedQuestionnaires(ownerId) : [];
+  const questionnaires: QuestionnaireListItem[] = ownerId
+    ? await listOwnedQuestionnaires(ownerId)
+    : [];
   const { deleteError, importError } = await searchParams;
   const importErrorMessage = getSearchParamMessage(importError);
   const deleteErrorMessage = getSearchParamMessage(deleteError);
