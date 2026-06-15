@@ -164,7 +164,7 @@ export async function getSessionStatistics(
   }
 
   const questionnaire = questionnaireSchema.parse(session.questionnaire.schemaJson);
-  const scoreAggregateMap = new Map(
+  const scoreAggregateMap = new Map<string, number | null>(
     session.scoreAggregates.map(
       (aggregate: (typeof session.scoreAggregates)[number]) => [
         aggregate.questionKey,
