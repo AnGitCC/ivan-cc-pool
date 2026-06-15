@@ -1,12 +1,11 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
 import { db } from "@/lib/db";
 import { buildSurveyUrl } from "@/lib/origins";
 
 type TransactionClient = Omit<
-  PrismaClient,
+  typeof db,
   "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
 >;
 
