@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  passwordHash   String
+  name           String
+  questionnaires Questionnaire[]
+  sessions       Session[]       @relation("SessionOwner")
+  dashboardPrefs DashboardPref?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Questionnaire {
+  id          String    @id @default(cuid())
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id])
+  title       String
+  description String?
+  schemaJson  Json
+  sessions    Session[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Session {
+  id               String            @id @default(cuid())
+  questionnaireId  String
+  ownerId          String
+  name             String
+  slug             String            @unique
+  status           SessionStatus     @default(ACTIVE)
+  publicUrl        String
+  questionnaire    Questionnaire     @relation(fields: [questionnaireId], references: [id])
+  owner            User              @relation("SessionOwner", fields: [ownerId], references: [id])
+  submissions      Submission[]
+  scoreAggregates  ScoreAggregate[]
+  optionAggregates OptionAggregate[]
+  exportJobs       ExportJob[]
+  createdAt        DateTime          @default(now())
+  closedAt         DateTime?
+  updatedAt        DateTime          @updatedAt
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  sessionId   String
+  payloadJson Json
+  totalScore  Float?
+  submittedAt DateTime @default(now())
+  session     Session  @relation(fields: [sessionId], references: [id])
+}
+
+model ScoreAggregate {
+  id              String  @id @default(cuid())
+  sessionId       String
+  questionKey     String
+  averageScore    Float
+  totalScore      Float
+  submissionCount Int
+  session         Session @relation(fields: [sessionId], references: [id])
+}
+
+model OptionAggregate {
+  id          String  @id @default(cuid())
+  sessionId   String
+  questionKey String
+  optionKey   String
+  choiceCount Int
+  session     Session @relation(fields: [sessionId], references: [id])
+}
+
+model DashboardPref {
+  id               String @id @default(cuid())
+  userId           String @unique
+  user             User   @relation(fields: [userId], references: [id])
+  hiddenModules    Json
+  chartTypeByBlock Json
+}
+
+model ExportJob {
+  id        String       @id @default(cuid())
+  sessionId String
+  kind      ExportKind
+  status    ExportStatus @default(PENDING)
+  fileUrl   String?
+  session   Session      @relation(fields: [sessionId], references: [id])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum ExportKind {
+  RAW_XLSX
+  SUMMARY_XLSX
+  PDF
+}
+
+enum ExportStatus {
+  PENDING
+  READY
+  FAILED
+}

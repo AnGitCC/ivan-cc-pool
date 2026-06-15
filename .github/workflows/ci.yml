@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/postgres?pgbouncer=true&connection_limit=1"
+      DIRECT_DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
+      AUTH_SECRET: "test-secret-with-at-least-16-chars"
+      CONSOLE_ORIGIN: "https://console.example.com"
+      SURVEY_ORIGIN: "https://survey.example.com"
+      NEXTAUTH_URL: "https://console.example.com"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run test
+      - run: pnpm run build

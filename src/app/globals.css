@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: 255 255 255;
+  --foreground: 10 10 10;
+  --muted: 245 245 247;
+  --surface: 255 255 255;
+  --border: 229 229 229;
+  --brand: 22 163 74;
+  --brand-strong: 21 128 61;
+  --ring: 134 239 172;
+}
+
+@theme inline {
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: rgb(var(--background));
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgb(var(--brand) / 0.1), transparent 28%),
+    linear-gradient(180deg, rgb(var(--muted) / 0.55), rgb(var(--background)) 18%);
+  color: rgb(var(--foreground));
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(var(--brand) / 0.18);
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
