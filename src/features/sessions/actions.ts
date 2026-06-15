@@ -1,9 +1,14 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { db } from "@/lib/db";
 import { buildSurveyUrl } from "@/lib/origins";
+
+type TransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 
 function createSessionSlug() {
   return randomUUID().replace(/-/g, "").slice(0, 10);
@@ -127,7 +132,7 @@ export async function listOwnedSessionsForWorkbench(
 }
 
 export async function deleteOwnedSession(sessionId: string, ownerId: string) {
-  return db.$transaction(async (tx: Prisma.TransactionClient) => {
+  return db.$transaction(async (tx: TransactionClient) => {
     await tx.submission.deleteMany({
       where: {
         sessionId,
