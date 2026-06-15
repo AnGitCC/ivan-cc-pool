@@ -234,14 +234,14 @@ export default async function QuestionnaireSessionsPage({
 
         <form action={handleCreateSession} className="mt-6 flex flex-col gap-3 md:flex-row">
           <input
-            className="w-full rounded-2xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-emerald-500"
+            className="flex-1 rounded-2xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-emerald-500"
             name="name"
             placeholder="例如：2026 届新员工训练营上午场"
             required
             type="text"
           />
           <button
-            className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-emerald-600"
+            className="inline-flex shrink-0 whitespace-nowrap items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-emerald-600"
             type="submit"
           >
             创建场次

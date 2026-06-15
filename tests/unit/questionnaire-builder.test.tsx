@@ -46,4 +46,30 @@ describe("QuestionnaireBuilder", () => {
 
     expect(screen.getAllByLabelText("题目标题")).toHaveLength(titleInputs.length - 1);
   });
+
+  it("edits option score for a formal choice question", () => {
+    render(<QuestionnaireBuilder mode="create" submitAction={vi.fn()} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "添加题目" })[1]);
+
+    const titleInputs = screen.getAllByLabelText("题目标题");
+    const typeInputs = screen.getAllByLabelText("题型");
+
+    fireEvent.change(titleInputs[titleInputs.length - 1], { target: { value: "课程满意度" } });
+    fireEvent.change(typeInputs[typeInputs.length - 1], { target: { value: "single" } });
+
+    const optionLabelInputs = screen.getAllByLabelText("选项 1 文案");
+    const optionScoreInputs = screen.getAllByLabelText("选项 1 分值");
+
+    fireEvent.change(optionLabelInputs[optionLabelInputs.length - 1], { target: { value: "非常满意" } });
+    fireEvent.change(optionScoreInputs[optionScoreInputs.length - 1], { target: { value: "10" } });
+
+    const draftInput = document.querySelector('input[name="draftJson"]');
+    expect(draftInput).toBeTruthy();
+    const parsed = JSON.parse((draftInput as HTMLInputElement).value);
+    expect(parsed.sections[1].questions.at(-1).options[0]).toEqual({
+      label: "非常满意",
+      score: 10,
+    });
+  });
 });

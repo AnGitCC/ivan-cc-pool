@@ -83,22 +83,41 @@ function createEditableQuestion(
     title: "",
     type: "single",
     required: false,
-    options: ["选项 1", "选项 2"],
+    options: [
+      { label: "选项 1", score: 0 },
+      { label: "选项 2", score: 0 },
+    ],
   };
 }
 
 function normalizeQuestionType(
+  sectionKind: QuestionnaireDraft["sections"][number]["kind"],
   question: QuestionnaireQuestion,
   nextType: QuestionnaireQuestion["type"],
 ): QuestionnaireQuestion {
   if (nextType === "single" || nextType === "multiple") {
+    const defaultOptions =
+      sectionKind === "formal"
+        ? [
+            { label: "选项 1", score: 0 },
+            { label: "选项 2", score: 0 },
+          ]
+        : ["选项 1", "选项 2"];
+
+    const existingOptions =
+      "options" in question && Array.isArray(question.options) && question.options.length > 0
+        ? question.options
+        : defaultOptions;
+
     return {
       ...question,
       type: nextType,
       options:
-        "options" in question && Array.isArray(question.options) && question.options.length > 0
-          ? question.options
-          : ["选项 1", "选项 2"],
+        sectionKind === "formal"
+          ? existingOptions.map((option) =>
+              typeof option === "string" ? { label: option, score: 0 } : option,
+            )
+          : existingOptions,
     };
   }
 
@@ -119,10 +138,32 @@ export function QuestionnaireBuilder({
   const initialDraft = useMemo(() => {
     const fallback = createEmptyQuestionnaireDraft();
 
+    const sections = (initialValue?.sections ?? fallback.sections).map((section) => {
+      if (section.kind !== "formal") {
+        return section;
+      }
+
+      return {
+        ...section,
+        questions: section.questions.map((question) => {
+          if (question.type !== "single" && question.type !== "multiple") {
+            return question;
+          }
+
+          return {
+            ...question,
+            options: question.options.map((option) =>
+              typeof option === "string" ? { label: option, score: 0 } : option,
+            ),
+          };
+        }),
+      };
+    });
+
     return {
       title: initialValue?.title ?? fallback.title,
       description: initialValue?.description ?? fallback.description,
-      sections: initialValue?.sections ?? fallback.sections,
+      sections,
     };
   }, [initialValue]);
 
@@ -322,6 +363,7 @@ export function QuestionnaireBuilder({
                                 onChange={(event) =>
                                   updateQuestion(sectionIndex, questionIndex, (currentQuestion) =>
                                     normalizeQuestionType(
+                                      section.kind,
                                       currentQuestion,
                                       event.target.value as QuestionnaireQuestion["type"],
                                     ),
@@ -356,6 +398,167 @@ export function QuestionnaireBuilder({
                           <p className="text-sm text-neutral-500">
                             当前题型：{getQuestionTypeLabel(question.type)}
                           </p>
+
+                          {section.kind === "formal" &&
+                          (question.type === "single" || question.type === "multiple") ? (
+                            <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
+                              <p className="text-sm font-medium text-neutral-700">选项与分值</p>
+                              <div className="space-y-3">
+                                {question.options.map((option, optionIndex) => {
+                                  const normalizedOption =
+                                    typeof option === "string" ? { label: option, score: 0 } : option;
+                                  const optionLabel = normalizedOption.label;
+                                  const optionScore = String(normalizedOption.score);
+
+                                  return (
+                                    <div
+                                      className="flex flex-col gap-3 md:flex-row md:items-end"
+                                      key={`${question.key}-option-${optionIndex}`}
+                                    >
+                                      <label className="block flex-1">
+                                        <span className="mb-2 block text-sm font-medium text-neutral-700">
+                                          选项 {optionIndex + 1} 文案
+                                        </span>
+                                        <input
+                                          className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 outline-none transition focus:border-emerald-500"
+                                          onChange={(event) =>
+                                            updateQuestion(sectionIndex, questionIndex, (currentQuestion) => {
+                                              if (
+                                                currentQuestion.type !== "single" &&
+                                                currentQuestion.type !== "multiple"
+                                              ) {
+                                                return currentQuestion;
+                                              }
+
+                                              return {
+                                                ...currentQuestion,
+                                                options: currentQuestion.options.map((entry, index) => {
+                                                  if (index !== optionIndex) {
+                                                    return entry;
+                                                  }
+
+                                                  const currentEntry =
+                                                    typeof entry === "string"
+                                                      ? { label: entry, score: 0 }
+                                                      : entry;
+                                                  return {
+                                                    ...currentEntry,
+                                                    label: event.target.value,
+                                                  };
+                                                }),
+                                              };
+                                            })
+                                          }
+                                          type="text"
+                                          value={optionLabel}
+                                        />
+                                      </label>
+
+                                      <label className="block w-full md:w-32">
+                                        <span className="mb-2 block text-sm font-medium text-neutral-700">
+                                          选项 {optionIndex + 1} 分值
+                                        </span>
+                                        <input
+                                          className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 outline-none transition focus:border-emerald-500"
+                                          onChange={(event) =>
+                                            updateQuestion(sectionIndex, questionIndex, (currentQuestion) => {
+                                              if (
+                                                currentQuestion.type !== "single" &&
+                                                currentQuestion.type !== "multiple"
+                                              ) {
+                                                return currentQuestion;
+                                              }
+
+                                              const parsedScore = Number(event.target.value);
+
+                                              return {
+                                                ...currentQuestion,
+                                                options: currentQuestion.options.map((entry, index) => {
+                                                  if (index !== optionIndex) {
+                                                    return entry;
+                                                  }
+
+                                                  const currentEntry =
+                                                    typeof entry === "string"
+                                                      ? { label: entry, score: 0 }
+                                                      : entry;
+                                                  return {
+                                                    ...currentEntry,
+                                                    score: Number.isFinite(parsedScore) ? parsedScore : 0,
+                                                  };
+                                                }),
+                                              };
+                                            })
+                                          }
+                                          step={1}
+                                          type="number"
+                                          value={optionScore}
+                                        />
+                                      </label>
+
+                                      <button
+                                        className="inline-flex items-center justify-center rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-600 transition hover:border-rose-300 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={question.options.length <= 1}
+                                        onClick={() =>
+                                          updateQuestion(sectionIndex, questionIndex, (currentQuestion) => {
+                                            if (
+                                              currentQuestion.type !== "single" &&
+                                              currentQuestion.type !== "multiple"
+                                            ) {
+                                              return currentQuestion;
+                                            }
+
+                                            if (currentQuestion.options.length <= 1) {
+                                              return currentQuestion;
+                                            }
+
+                                            return {
+                                              ...currentQuestion,
+                                              options: currentQuestion.options.filter(
+                                                (_entry, index) => index !== optionIndex,
+                                              ),
+                                            };
+                                          })
+                                        }
+                                        type="button"
+                                      >
+                                        删除
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <button
+                                className="inline-flex items-center justify-center rounded-full border border-dashed border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 hover:text-neutral-950"
+                                onClick={() =>
+                                  updateQuestion(sectionIndex, questionIndex, (currentQuestion) => {
+                                    if (
+                                      currentQuestion.type !== "single" &&
+                                      currentQuestion.type !== "multiple"
+                                    ) {
+                                      return currentQuestion;
+                                    }
+
+                                    const nextIndex = currentQuestion.options.length + 1;
+
+                                    return {
+                                      ...currentQuestion,
+                                      options: [
+                                        ...currentQuestion.options.map((entry) =>
+                                          typeof entry === "string" ? { label: entry, score: 0 } : entry,
+                                        ),
+                                        { label: `选项 ${nextIndex}`, score: 0 },
+                                      ],
+                                    };
+                                  })
+                                }
+                                type="button"
+                              >
+                                新增选项
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                         <button
                           className="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-600 transition hover:border-rose-300 hover:text-rose-700"

@@ -22,13 +22,16 @@ function ChoiceOptionGroup({
   inputType: "radio" | "checkbox";
 }) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div
+      className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))]"
+      data-testid="survey-choice-options"
+    >
       {question.options.map((option) => {
         const value = getOptionLabel(option);
 
         return (
           <label
-            className="inline-flex min-h-12 min-w-[140px] max-w-full cursor-pointer items-start gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 transition hover:border-emerald-300"
+            className="flex min-h-12 w-full cursor-pointer items-start gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 transition hover:border-emerald-300"
             data-testid="survey-choice-option"
             key={`${question.key}-${value}`}
           >
