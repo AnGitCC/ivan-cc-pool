@@ -1,6 +1,0 @@
-name = "survey-proxy"
-main = "src/index.ts"
-compatibility_date = "2026-06-15"
-
-[vars]
-ORIGIN = "https://an-survey-platform.vercel.app"

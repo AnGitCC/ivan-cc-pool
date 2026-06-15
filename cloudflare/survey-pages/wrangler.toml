@@ -1,0 +1,5 @@
+name = "survey-at-gtk"
+compatibility_date = "2026-06-15"
+
+[vars]
+ORIGIN = "https://an-survey-platform.vercel.app"
