@@ -188,13 +188,15 @@ export async function getSessionStatistics(
       submittedAt: submission.submittedAt,
     }),
   );
+  type SubmissionEntry = (typeof submissions)[number];
+  type ScoredSubmissionEntry = SubmissionEntry & { totalScore: number };
 
   const scoreEntries = submissions.filter(
-    (submission): submission is typeof submission & { totalScore: number } =>
+    (submission: SubmissionEntry): submission is ScoredSubmissionEntry =>
       typeof submission.totalScore === "number",
   );
   const totalScore = scoreEntries.reduce(
-    (sum, submission) => sum + submission.totalScore,
+    (sum: number, submission: ScoredSubmissionEntry) => sum + submission.totalScore,
     0,
   );
   const scoreDistributionMap = new Map<string, number>();
