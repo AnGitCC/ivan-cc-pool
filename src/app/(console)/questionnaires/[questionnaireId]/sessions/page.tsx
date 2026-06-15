@@ -18,6 +18,8 @@ import {
 import { getOwnedQuestionnaire } from "@/features/questionnaires/actions";
 import { auth } from "@/lib/auth";
 
+type SessionListItem = Awaited<ReturnType<typeof listQuestionnaireSessions>>[number];
+
 type SessionsPageProps = {
   params: Promise<{
     questionnaireId: string;
@@ -90,7 +92,7 @@ export default async function QuestionnaireSessionsPage({
 
   const closedSessionStatistics =
     getSessionWorkbenchE2eStatistics(sessionWorkbenchE2eClosedSessionId);
-  const sessions = useE2eFixture
+  const sessions: SessionListItem[] = useE2eFixture
     ? [
         {
           id: sessionWorkbenchE2eStatistics.session.id,
@@ -122,7 +124,7 @@ export default async function QuestionnaireSessionsPage({
               },
             }
           : null,
-      ].filter((item) => item !== null)
+      ].filter((item): item is SessionListItem => item !== null)
     : await listQuestionnaireSessions(questionnaireId, ownerId);
 
   async function handleCreateSession(formData: FormData) {
